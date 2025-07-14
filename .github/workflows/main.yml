@@ -9,6 +9,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # --- 新增的區塊：授予工作流程寫入權限 ---
+    permissions:
+      contents: write
+    # ------------------------------------------
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,12 +28,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # --- 新增的步驟 ---
       - name: Write cookies to file
-        # 這個步驟會從 GitHub Secret 中讀取 Cookies 內容
-        # 並把它寫入到一個名為 cookies.txt 的臨時文件中
         run: echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
-      # ------------------
 
       - name: Run subtitle fetcher script
         env:
