@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. 簽出當前倉庫 (yt-sub) 的程式碼
+      # 1. 簽出 yt-sub 倉庫的程式碼
       - name: Checkout yt-sub repository
         uses: actions/checkout@v4
 
@@ -30,7 +30,7 @@ jobs:
       - name: Write cookies to file
         run: echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
 
-      # 5. 執行核心腳本 (下載字幕、AI處理、保存為 .md 文件)
+      # 5. 執行核心腳本 (下載、AI處理、生成Hugo格式文章)
       - name: Run Python script for fetching and processing
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -38,7 +38,7 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python fetch_subtitles.py
 
-      # 6. 將處理好的文章推送到 010news 倉庫
+      # 6. 將處理好的文章推送到 010news 倉庫的指定目錄
       - name: Push processed articles to 010news repository
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -47,5 +47,6 @@ jobs:
           source-directory: 'processed_articles'
           destination-github-username: 'hendrywu2020'
           destination-repository-name: '010news'
+          destination-directory: 'content/posts' # <-- 新增：指定推送到博客的文章目錄
           commit-message: 'feat: Add new daily article'
           target-branch: main
