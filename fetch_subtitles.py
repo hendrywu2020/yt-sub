@@ -24,6 +24,7 @@ ydl_opts = {
     'ignoreerrors': True,        # 遇到錯誤時繼續
     'verbose': True,             # 輸出詳細日誌，方便在 GitHub Actions 中除錯
     'apikey': API_KEY,           # 使用您的 API Key
+    'cookiefile': 'cookies.txt', # **新增：指定包含登入資訊的 cookies 文件**
 }
 
 # 執行下載
