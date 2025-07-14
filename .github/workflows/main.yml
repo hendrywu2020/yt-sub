@@ -1,4 +1,4 @@
-name: Fetch YouTube Subtitles Daily
+name: Fetch, Process, and Publish Subtitles
 
 on:
   schedule:
@@ -6,42 +6,46 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
-
-    # --- 新增的區塊：授予工作流程寫入權限 ---
-    permissions:
-      contents: write
-    # ------------------------------------------
-
+    
     steps:
-      - name: Checkout repository
+      # 1. 簽出當前倉庫 (yt-sub) 的程式碼
+      - name: Checkout yt-sub repository
         uses: actions/checkout@v4
 
+      # 2. 設定 Python 環境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
+      # 3. 安裝所有需要的 Python 套件
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # 4. 寫入 Cookies 文件
       - name: Write cookies to file
         run: echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
 
-      - name: Run subtitle fetcher script
+      # 5. 執行核心腳本 (下載字幕、AI處理、保存為 .md 文件)
+      - name: Run Python script for fetching and processing
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python fetch_subtitles.py
 
-      - name: Commit and push subtitles
-        uses: stefanzweifel/git-auto-commit-action@v5
+      # 6. 將處理好的文章推送到 010news 倉庫
+      - name: Push processed articles to 010news repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
         with:
-          commit_message: "chore: Add new subtitles"
-          file_pattern: "subtitles/*.srv3"
-          commit_user_name: "GitHub Actions Bot"
-          commit_user_email: "actions@github.com"
-          commit_author: "GitHub Actions Bot <actions@github.com>"
+          source-directory: 'processed_articles'
+          destination-github-username: 'hendrywu2020'
+          destination-repository-name: '010news'
+          commit-message: 'feat: Add new daily article'
+          target-branch: main
