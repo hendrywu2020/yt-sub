@@ -1,49 +1,46 @@
 name: Fetch YouTube Subtitles Daily
 
-# 觸發條件
 on:
-  # 1. 定時執行：使用 CRON 表達式，此處設定為每天 UTC 時間 早上 7:00 執行
-  #    (對應北京/台北時間下午 3:00)
   schedule:
-    - cron: '0 0 * * *'
-  
-  # 2. 手動觸發：允許您在 Actions 頁面手動點擊按鈕來執行
+    - cron: '0 0 * * *' # 上海/台北時間上午 8:00
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # 使用最新的 Ubuntu 環境
+    runs-on: ubuntu-latest
 
     steps:
-      # 第一步：簽出 (Checkout) 你的程式碼
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 第二步：設定 Python 環境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # 指定 Python 版本
+          python-version: '3.10'
 
-      # 第三步：安裝 Python 依賴套件
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 第四步：執行我們的 Python 腳本來下載字幕
+      # --- 新增的步驟 ---
+      - name: Write cookies to file
+        # 這個步驟會從 GitHub Secret 中讀取 Cookies 內容
+        # 並把它寫入到一個名為 cookies.txt 的臨時文件中
+        run: echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+      # ------------------
+
       - name: Run subtitle fetcher script
         env:
           YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python fetch_subtitles.py
 
-      # 第五步：將下載並轉換後的新字幕文件提交回倉庫
       - name: Commit and push subtitles
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: Add new subtitles"
-          file_pattern: "subtitles/*.srv3" # 只提交 subtitles 目錄下的 srv3 文件
+          file_pattern: "subtitles/*.srv3"
           commit_user_name: "GitHub Actions Bot"
           commit_user_email: "actions@github.com"
           commit_author: "GitHub Actions Bot <actions@github.com>"
